@@ -71,8 +71,6 @@ public class Tower
         }
 
         Colors firstColor = _layerColors[firstIndex];
-
-        Debug.Log("not empty");
         int count = 1;
         for (int i = firstIndex+1; i < _layerColors.Length; i++)
         {

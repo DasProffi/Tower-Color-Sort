@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class TowerManagerScript : MonoBehaviour
+public class GameManagerScript : MonoBehaviour
 {
     public GameObject towerRendererPrefab; 
     public GameState GameState;

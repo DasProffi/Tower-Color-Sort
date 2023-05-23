@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -6,7 +5,7 @@ public class TowerRendererScript : MonoBehaviour
 {
     public GameObject boxPrefab;
     public int id;
-    public TowerManagerScript towerManagerScript;
+    [FormerlySerializedAs("towerManagerScript")] public GameManagerScript gameManagerScript;
     private Tower _tower;
     private bool _isSelected = false;
     private GameObject[] _boxes;
@@ -15,8 +14,8 @@ public class TowerRendererScript : MonoBehaviour
     // Start is called on the frame when a script is enabled just before any of the Update
     private void Start()
     {
-        towerManagerScript = transform.parent.GetComponent<TowerManagerScript>();
-        _tower = towerManagerScript.GameState.Towers[id];
+        gameManagerScript = transform.parent.GetComponent<GameManagerScript>();
+        _tower = gameManagerScript.GameState.Towers[id];
         _selectMarker = transform.Find("SelectMarker").gameObject;
         _selectMarker.SetActive(false);
         _boxes = new GameObject[_tower.GetStackSize()];
@@ -42,7 +41,7 @@ public class TowerRendererScript : MonoBehaviour
     private void OnMouseOver(){
         if(Input.GetMouseButtonDown(0))
         {
-            SetSelected(towerManagerScript.SetSelectedTower(id));
+            SetSelected(gameManagerScript.SetSelectedTower(id));
         }
     }
 

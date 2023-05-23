@@ -3,8 +3,10 @@ using UnityEngine;
 
 public class GameState
 {   
+    public delegate void VoidDelegate();
     public int NumberOfTowers = 5;
     public Tower[] Towers;
+    public bool IsFinished = false;
 
     public GameState()
     {
@@ -29,8 +31,7 @@ public class GameState
             return false;
         }
         int movedAmount = Math.Min(toTower.GetCountOfTopEmpty(), fromTower.GetCountOfTopColor());
-        Debug.Log(movedAmount);
-        
+
         Colors[] fromColors = fromTower.GetLayerColors();
         for (int i = fromTower.FirstColorIndex(); i < movedAmount + fromTower.FirstColorIndex(); i++)
         {
@@ -49,6 +50,23 @@ public class GameState
             toColors[i] = fromColor;
         }
         Towers[to] = new Tower(toColors);
+        if (GetIsFinished())
+        {
+            IsFinished = true;
+        }
+        return true;
+    }
+
+    public bool GetIsFinished()
+    {
+        for (int i = 0; i < NumberOfTowers; i++)
+        {
+            if (!(Towers[i].IsFull() || Towers[i].IsEmpty()))
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 }
