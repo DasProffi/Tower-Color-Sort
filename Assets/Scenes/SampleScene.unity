@@ -218,7 +218,7 @@ GameObject:
   - component: {fileID: 1704125975}
   - component: {fileID: 1704125976}
   m_Layer: 0
-  m_Name: GameManager
+  m_Name: TowerManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -251,4 +251,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 23ffa977f5d3d08459b1748d91b35ef9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  towerRenderer: {fileID: 4105812086161043889, guid: 0b1a304425313714ea9c398f1009d438, type: 3}
+  towerRendererPrefab: {fileID: 4105812086161043889, guid: 0b1a304425313714ea9c398f1009d438, type: 3}

@@ -51,6 +51,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spriteRenderer: {fileID: 2201246186198287941}
+  normal: {fileID: 21300000, guid: 7c21be816f68896489e294ab66b0826d, type: 3}
+  empty: {fileID: 21300000, guid: dd070e69fbac8d741b221ea65a3ed812, type: 3}
 --- !u!212 &2201246186198287941
 SpriteRenderer:
   m_ObjectHideFlags: 0

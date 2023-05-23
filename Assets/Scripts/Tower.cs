@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using UnityEngine;
 
 public class Tower
 {
@@ -26,6 +27,11 @@ public class Tower
         return _layerColors.All(t => t == Colors.none);
     }
 
+    public bool IsFull()
+    {
+        return _layerColors[0] != Colors.none;
+    }
+    
     public int FirstColorIndex()
     {
         return Array.FindIndex(_layerColors,colors => colors != Colors.none);
@@ -42,6 +48,20 @@ public class Tower
         return _layerColors[firstIndex];
     }
     
+    public int GetCountOfTopEmpty()
+    {
+        int count = 0;
+        for (int i = 0; i < _layerColors.Length; i++)
+        {
+            if (_layerColors[i] != Colors.none)
+            {
+                return count;
+            }
+            count++;
+        }
+        return count;
+    }
+    
     public int GetCountOfTopColor()
     {
         int firstIndex = FirstColorIndex();
@@ -50,10 +70,13 @@ public class Tower
             return StackSize;
         }
 
-        int count = 0;
-        for (int i = firstIndex; i < _layerColors.Length; i++)
+        Colors firstColor = _layerColors[firstIndex];
+
+        Debug.Log("not empty");
+        int count = 1;
+        for (int i = firstIndex+1; i < _layerColors.Length; i++)
         {
-            if (_layerColors[i] == Colors.none)
+            if (_layerColors[i] != firstColor)
             {
                 return count;
             }
@@ -74,7 +97,11 @@ public class Tower
             return false;
         }
 
-        int firstIndex = FirstColorIndex();
+        int firstIndex = Array.FindIndex(colorsArray,colors => colors != Colors.none);
+        if (firstIndex == -1)
+        {
+            return true;
+        }
         for (int i = firstIndex+1; i < colorsArray.Length; i++)
         {
             if (colorsArray[i] == Colors.none)
@@ -82,7 +109,8 @@ public class Tower
                 return false;
             }
         }
-        return colorsArray.All(t => t == Colors.none);
+
+        return true;
     }
 
     public bool SetLayerColors(Colors[] colorArray)
@@ -112,5 +140,21 @@ public class Tower
     public int GetStackSize()
     {
         return StackSize;
+    }
+
+    public override string ToString()
+    {
+        if (_layerColors.Length == 0)
+        {
+            return "[]";
+        }
+        string result = "[";
+        for (int i=0; i < _layerColors.Length; i++)
+        {
+            result += _layerColors[i] + ", ";
+        }
+
+        result = result.Substring(0, result.Length - 2);
+        return result += "]";
     }
 }
