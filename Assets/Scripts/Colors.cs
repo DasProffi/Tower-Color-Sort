@@ -5,6 +5,10 @@ public enum Colors{
     yellow,
     purple,
     orange,
+    cyan,
+    ocker,
+    magenta,
+    lightBlue,
     none,
 }
 

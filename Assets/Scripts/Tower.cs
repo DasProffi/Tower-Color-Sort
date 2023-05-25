@@ -5,7 +5,7 @@ using UnityEngine;
 public class Tower
 {
     private Colors[] _layerColors;
-    private const int StackSize = 4;
+    public static int StackSize = 4;
     
     public Tower(Colors[] colorsArray = null){
         if (colorsArray == null || !IsValid(colorsArray))
@@ -32,20 +32,30 @@ public class Tower
         return _layerColors[0] != Colors.none;
     }
     
-    public int FirstColorIndex()
+    public int GetFirstColorIndex()
     {
         return Array.FindIndex(_layerColors,colors => colors != Colors.none);
     }
 
     public Colors GetTopColor()
     {
-        int firstIndex = FirstColorIndex();
+        int firstIndex = GetFirstColorIndex();
         if (IsEmpty())
         {
             return Colors.none;
         }
 
         return _layerColors[firstIndex];
+    }
+
+    public bool CanInsertColor(Colors color, int movedAmount)
+    {
+        if (IsEmpty())
+        {
+            return true;
+        }
+
+        return GetTopColor() == color && movedAmount < GetCountOfTopEmpty();
     }
     
     public int GetCountOfTopEmpty()
@@ -64,7 +74,7 @@ public class Tower
     
     public int GetCountOfTopColor()
     {
-        int firstIndex = FirstColorIndex();
+        int firstIndex = GetFirstColorIndex();
         if (IsEmpty())
         {
             return StackSize;
@@ -81,6 +91,20 @@ public class Tower
 
             count++;
         }
+        return count;
+    }
+
+    public int GetCountOfColored()
+    {
+        int count = 0;
+        for (int i = 0; i < StackSize; i++)
+        {
+            if (_layerColors[i] != Colors.none)
+            {
+                count++;
+            }
+        }
+
         return count;
     }
     

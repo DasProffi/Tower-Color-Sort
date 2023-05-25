@@ -19,6 +19,9 @@ public class TowerRendererScript : MonoBehaviour
         _selectMarker = transform.Find("SelectMarker").gameObject;
         _selectMarker.SetActive(false);
         _boxes = new GameObject[_tower.GetStackSize()];
+        float boxHeight = GetComponent<RectTransform>().sizeDelta.y / _tower.GetStackSize();
+        float boxWidth = GetComponent<RectTransform>().sizeDelta.x;
+        _selectMarker.GetComponent<RectTransform>().localScale = new Vector3(2.2f,0.2f) * boxHeight;
         for (int i = 0; i < _tower.GetStackSize(); i++)
         {
             // Create a new box GameObject
@@ -28,7 +31,11 @@ public class TowerRendererScript : MonoBehaviour
             
             // Set the position and size of the box using RectTransform
             RectTransform rectTransform = _boxes[i].GetComponent<RectTransform>();
-            rectTransform.localPosition = new Vector3(0, _tower.GetStackSize()/2-i-0.5f);
+            rectTransform.localPosition = new Vector3(0,  boxHeight * (_tower.GetStackSize() / 2 - i - 0.5f));
+            rectTransform.sizeDelta = new Vector2(boxWidth,boxHeight);
+            
+            SpriteRenderer spriteRenderer = _boxes[i].GetComponent<SpriteRenderer>();
+            spriteRenderer.transform.localScale = new Vector3(boxHeight, boxHeight);
         }
     }
 
