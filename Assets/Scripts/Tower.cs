@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -101,6 +102,22 @@ public class Tower
         {
             if (_layerColors[i] != Colors.none)
             {
+                count++;
+            }
+        }
+
+        return count;
+    }
+    
+    public int GetCountOfDifferentColors()
+    {
+        int count = 0;
+        List<Colors> colorsList = new List<Colors>();
+        for (int i = 0; i < StackSize; i++)
+        {
+            if (_layerColors[i] != Colors.none && !colorsList.Contains(_layerColors[i]))
+            {   
+                colorsList.Add(_layerColors[i]);
                 count++;
             }
         }

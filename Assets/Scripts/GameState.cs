@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using util;
 using Random = System.Random;
 
 public class GameState
 {   
     public delegate void VoidDelegate();
-    public int NumberOfTowers = 10;
+    public int NumberOfTowers = 12;
+    public int SpareTowers = 2;
     public Tower[] Towers;
     public bool IsFinished = false;
     private readonly Stack<Tower[]> _undoStack = new Stack<Tower[]>();
@@ -50,7 +52,7 @@ public class GameState
         _redoStack.Clear();
         
         Colors[] fromColors = fromTower.GetLayerColors();
-        for (int i = fromTower.GetFirstColorIndex(); i < movedAmount + fromTower.GetFirstColorIndex(); i++)
+        for (int i = fromTower.GetFirstColorIndex(); i < movedAmount + fromTower.GetFirstColorIndex() && i < fromColors.Length; i++)
         {
             fromColors[i] = Colors.none;
         }
@@ -117,7 +119,7 @@ public class GameState
         usableColors = usableColors.Where(colors => colors != Colors.none).ToArray();
         // Get NumberOfTowers - 2 different Colors
         Random random = new Random();
-        List<Colors> usedColorsList = usableColors.OrderBy(_ => random.Next()).Take(NumberOfTowers - 2).ToList();
+        List<Colors> usedColorsList = usableColors.OrderBy(_ => random.Next()).Take(NumberOfTowers - SpareTowers).ToList();
 
         for (int i = 0; i < Towers.Length; i++)
         {
@@ -130,17 +132,74 @@ public class GameState
     // Shuffles backwards from sorted to unsorted
     private void Shuffle()
     {
-        const int maxAmountOfShuffles = 50;
+        const int maxAmountOfShuffles = 30;
+        int towerHeight = Towers[0].GetStackSize();
         for (int i = 0; i < maxAmountOfShuffles; i++)
         {
             int[] possibleTowers = Enumerable.Range(0, Towers.Length).ToArray();
-            possibleTowers = possibleTowers.Where(i => Towers[i].GetCountOfTopColor() > 1 && !Towers[i].IsEmpty())
+            possibleTowers = possibleTowers.Where(towerIndex => Towers[towerIndex].GetCountOfTopColor() > 1 && !Towers[towerIndex].IsEmpty())
                 .ToArray();
-            Tower[] towers = Towers;
 
-            // Take from first move to second
-            List<(int, int)> possibleSwaps = new List<(int, int)>();
+            List<WeightedItem<int>> weighted = possibleTowers.Select(index =>
+            {
+                WeightedItem<int> item = new WeightedItem<int>
+                {
+                    Item = index,
+                    Weight = (float)Towers[index].GetCountOfTopColor()/Towers[index].GetCountOfDifferentColors()
+                };
+                return item;
+            }).ToList();
 
+            do
+            {
+                int fromIndex = WeightRandomUtil.GetWeightedRandom(weighted, -1);
+                int[] possibleTargets = Enumerable.Range(0, Towers.Length)
+                    .Where(index => Towers[index].GetCountOfTopEmpty() > 0 && index != fromIndex)
+                    .Where(index => Towers[index].GetCountOfTopColor() != towerHeight-1)
+                    .ToArray();
+                List<WeightedItem<int>> weightedTargets = possibleTargets.Select(index =>
+                {
+                    int differentColors = Towers[index].GetCountOfDifferentColors();
+                    WeightedItem<int> item = new WeightedItem<int>
+                    {
+                        Item = index,
+                        Weight = (float)Convert.ToSingle(Math.Pow(differentColors == 0 ? towerHeight:differentColors,2))/Towers[index].GetCountOfTopColor()
+                    };
+                    return item;
+                }).ToList();
+                
+                if (weightedTargets.Count > 0 && fromIndex != -1)
+                {
+                    int target = WeightRandomUtil.GetWeightedRandom(weightedTargets, -1);
+                    int maxMovedAmount = Math.Min(Towers[fromIndex].GetCountOfTopColor(), Towers[target].GetCountOfTopEmpty());
+                    int movedAmount = WeightRandomUtil.GetWeightedRandom(
+                        Enumerable.Range(1, maxMovedAmount).Select(amount => new WeightedItem<int>
+                            {
+                                Item = amount,
+                                Weight = 1f/Convert.ToSingle(Math.Pow(amount,2))
+                            })
+                        .ToList(), -1);
+                    Move(fromIndex, target, movedAmount);
+                    weighted = new List<WeightedItem<int>>();
+                }
+                else
+                {
+                    weighted = weighted.Where(item => item.Item != fromIndex).ToList();
+                }
+            } while (weighted.Count > 0);
+        }
+        
+        // Try to leave SpareTowers empty
+        
+        // Take from first move to second
+        List<(int, int)> possibleSwaps = new List<(int, int)>();
+        do
+        {
+            int[] possibleTowers = Enumerable.Range(0, Towers.Length).ToArray();
+            possibleTowers = possibleTowers.Where(i => Towers[i].GetCountOfTopColor() > 1 && !Towers[i].IsEmpty() && !Towers[i].IsFull())
+                .ToArray();
+            
+            possibleSwaps.Clear();
             foreach (var towerIndex in possibleTowers)
             {
                 int[] possibleTargets = Enumerable.Range(0, Towers.Length).ToArray();
@@ -160,9 +219,8 @@ public class GameState
             Random random = new Random();
             var (from, to) = possibleSwaps[random.Next(0, possibleSwaps.Count - 1)];
             int movedAmount = random.Next(1, Math.Min(Towers[from].GetCountOfTopColor(), Towers[to].GetCountOfTopEmpty()));
-            Debug.Log(movedAmount);
             Move(from, to, movedAmount);
-        }
+        } while (possibleSwaps.Count > 0);
     }
 
     public override string ToString()
