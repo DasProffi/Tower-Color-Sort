@@ -14,13 +14,14 @@ public class GameState
     public bool IsFinished = false;
     private readonly Stack<Tower[]> _undoStack = new Stack<Tower[]>();
     private readonly Stack<Tower[]> _redoStack = new Stack<Tower[]>();
+    public Stack<(int, int)> Solution = new Stack<(int, int)>();
 
     public GameState()
     {
         GenerateRandom();
     }
     
-    public bool TryMove(int from, int to)
+    public bool TryMove(int from, int to, bool addToUndo = true)
     {
         Tower fromTower = Towers[from];
         Tower toTower = Towers[to];
@@ -34,6 +35,12 @@ public class GameState
         }
         int movedAmount = Math.Min(toTower.GetCountOfTopEmpty(), fromTower.GetCountOfTopColor());
 
+        if (addToUndo)
+        {
+            CurrentToUndoStack();
+            _redoStack.Clear();
+        }
+        
         Move(from, to, movedAmount);
         if (GetIsFinished())
         {
@@ -42,17 +49,14 @@ public class GameState
         return true;
     }
 
-    private void Move(int fromIndex, int toIndex, int movedAmount)
+    private void Move(int fromIndex, int toIndex, int movedAmount = 1)
     {
         Tower fromTower = Towers[fromIndex];
         Tower toTower = Towers[toIndex];
         Colors fromColor = fromTower.GetTopColor();
 
-        CurrentToUndoStack();
-        _redoStack.Clear();
-        
         Colors[] fromColors = fromTower.GetLayerColors();
-        for (int i = fromTower.GetFirstColorIndex(); i < movedAmount + fromTower.GetFirstColorIndex() && i < fromColors.Length; i++)
+        for (int i = fromTower.GetFirstColorIndex(); i < movedAmount + fromTower.GetFirstColorIndex(); i++)
         {
             fromColors[i] = Colors.none;
         }
@@ -71,19 +75,34 @@ public class GameState
         Towers[toIndex] = new Tower(toColors);
     }
 
+    public bool HasUndo()
+    { 
+        return _undoStack.Count > 0;
+    }
+    
+    public bool HasRedo()
+    { 
+        return _redoStack.Count > 0;
+    }
+    
     public void Undo()
     {
-        if (_undoStack.Count > 0)
+        if (HasUndo())
         {
             Tower[] towers = _undoStack.Pop();
             _redoStack.Push(Towers);
             Towers = towers;
         }
     }
+
+    public void ClearUndo()
+    {
+        _undoStack.Clear();
+    }
     
     public void Redo()
     {
-        if (_redoStack.Count > 0)
+        if (HasRedo())
         {
             Tower[] towers = _redoStack.Pop();
             _undoStack.Push(Towers);
@@ -93,9 +112,43 @@ public class GameState
 
     private void CurrentToUndoStack()
     {
+        _undoStack.Push(GetTowersCopy());
+    }
+
+    private Tower[] GetTowersCopy()
+    {   
         Tower[] towerCopy = new Tower[NumberOfTowers];
-        Array.Copy(Towers, towerCopy, NumberOfTowers);
-        _undoStack.Push(towerCopy);
+        for (int i = 0; i < Towers.Length; i++)
+        {
+            towerCopy[i] = new Tower(Towers[i].GetLayerColors());
+        }
+        return towerCopy;
+    }
+
+    private int GradeTowers(Tower[] towerArray)
+    {
+        int towerHeight = towerArray[0].GetStackSize();
+        int value = 0;
+        foreach (var tower in towerArray)
+        {
+            if ((tower.GetCountOfDifferentColors() >= 2 && tower.GetCountOfColored() == towerHeight) || tower.IsEmpty())
+            {
+                value += 10;
+            }
+            else
+            {
+                value -= 50;
+            }
+            if (tower.GetCountOfDifferentColors() >= 3)
+            {
+                value += 2;
+            }
+            if (tower.GetCountOfDifferentColors() >= 3)
+            {
+                value += 5;
+            }
+        }
+        return value;
     }
 
     public bool GetIsFinished()
@@ -126,7 +179,46 @@ public class GameState
             Towers[i] = new Tower( Enumerable.Repeat(i < usedColorsList.Count ? usedColorsList[i] : Colors.none, Tower.StackSize).ToArray());
         }
 
-        Shuffle();
+        Dictionary<(Tower[],Stack<(int,int)>), int> scores = new Dictionary<(Tower[],Stack<(int,int)>), int>();
+        for (int i = 0; i < 5; i++)
+        {
+            Solution = new Stack<(int, int)>();
+            Shuffle();
+            scores.Add((GetTowersCopy(),Solution),GradeTowers(Towers));
+        }
+
+        (Towers,Solution) = scores.FirstOrDefault(kv => kv.Value == scores.Values.Max()).Key;
+        
+        
+        // Move Empty towers to the right
+        for (int i = 0; i < SpareTowers; i++)
+        {
+            int spareTowerIndex = Array.FindIndex(Towers, tower => tower.IsEmpty());
+            (Towers[spareTowerIndex], Towers[NumberOfTowers - i - 1]) =
+                (Towers[NumberOfTowers - i - 1], Towers[spareTowerIndex]);
+            int index = i;
+            Solution = new Stack<(int, int)>(Solution.Select(move =>
+            {
+                int from = move.Item1;
+                if (from == spareTowerIndex)
+                {
+                    from = NumberOfTowers - index - 1;
+                }else if (from == NumberOfTowers - index - 1)
+                {
+                    from = spareTowerIndex;
+                }
+                int to = move.Item2;
+                if (to == spareTowerIndex)
+                {
+                    to = NumberOfTowers - index - 1;
+                }else if (to == NumberOfTowers - index - 1)
+                {
+                    to = spareTowerIndex;
+                }
+
+                return (from, to);
+            }).Reverse());
+        }
     }
 
     // Shuffles backwards from sorted to unsorted
@@ -136,11 +228,12 @@ public class GameState
         int towerHeight = Towers[0].GetStackSize();
         for (int i = 0; i < maxAmountOfShuffles; i++)
         {
-            int[] possibleTowers = Enumerable.Range(0, Towers.Length).ToArray();
-            possibleTowers = possibleTowers.Where(towerIndex => Towers[towerIndex].GetCountOfTopColor() > 1 && !Towers[towerIndex].IsEmpty())
+            int[] fromTowers = Enumerable.Range(0, Towers.Length).ToArray();
+            fromTowers = fromTowers
+                .Where(towerIndex => Towers[towerIndex].CanTakeAwayTopColor())
                 .ToArray();
 
-            List<WeightedItem<int>> weighted = possibleTowers.Select(index =>
+            List<WeightedItem<int>> weightedFrom = fromTowers.Select(index =>
             {
                 WeightedItem<int> item = new WeightedItem<int>
                 {
@@ -152,51 +245,44 @@ public class GameState
 
             do
             {
-                int fromIndex = WeightRandomUtil.GetWeightedRandom(weighted, -1);
+                int fromIndex = WeightRandomUtil.GetWeightedRandom(weightedFrom, -1);
                 int[] possibleTargets = Enumerable.Range(0, Towers.Length)
                     .Where(index => Towers[index].GetCountOfTopEmpty() > 0 && index != fromIndex)
                     .Where(index => Towers[index].GetCountOfTopColor() != towerHeight-1)
                     .ToArray();
-                List<WeightedItem<int>> weightedTargets = possibleTargets.Select(index =>
+                List<WeightedItem<int>> weightedTo = possibleTargets.Select(index =>
                 {
                     int differentColors = Towers[index].GetCountOfDifferentColors();
                     WeightedItem<int> item = new WeightedItem<int>
                     {
                         Item = index,
-                        Weight = (float)Convert.ToSingle(Math.Pow(differentColors == 0 ? towerHeight:differentColors,2))/Towers[index].GetCountOfTopColor()
+                        Weight = (float)Convert.ToSingle(Math.Pow(differentColors == 0 ? towerHeight:differentColors,2))/
+                                 (Towers[index].GetCountOfTopColor() * Towers[index].GetCountOfTopColor())
                     };
                     return item;
                 }).ToList();
                 
-                if (weightedTargets.Count > 0 && fromIndex != -1)
+                if (weightedTo.Count > 0 && fromIndex != -1)
                 {
-                    int target = WeightRandomUtil.GetWeightedRandom(weightedTargets, -1);
-                    int maxMovedAmount = Math.Min(Towers[fromIndex].GetCountOfTopColor(), Towers[target].GetCountOfTopEmpty());
-                    int movedAmount = WeightRandomUtil.GetWeightedRandom(
-                        Enumerable.Range(1, maxMovedAmount).Select(amount => new WeightedItem<int>
-                            {
-                                Item = amount,
-                                Weight = 1f/Convert.ToSingle(Math.Pow(amount,2))
-                            })
-                        .ToList(), -1);
-                    Move(fromIndex, target, movedAmount);
-                    weighted = new List<WeightedItem<int>>();
+                    int targetIndex = WeightRandomUtil.GetWeightedRandom(weightedTo, -1);
+                    Move(fromIndex, targetIndex);
+                    Solution.Push((fromIndex,targetIndex));
+                    break;
                 }
-                else
-                {
-                    weighted = weighted.Where(item => item.Item != fromIndex).ToList();
-                }
-            } while (weighted.Count > 0);
+                weightedFrom = weightedFrom.Where(item => item.Item != fromIndex).ToList();
+            } while (weightedFrom.Count > 0);
         }
         
         // Try to leave SpareTowers empty
         
         // Take from first move to second
         List<(int, int)> possibleSwaps = new List<(int, int)>();
+        int MaxFixSteps = 50;
+        int fixSteps = 0;
         do
         {
             int[] possibleTowers = Enumerable.Range(0, Towers.Length).ToArray();
-            possibleTowers = possibleTowers.Where(i => Towers[i].GetCountOfTopColor() > 1 && !Towers[i].IsEmpty() && !Towers[i].IsFull())
+            possibleTowers = possibleTowers.Where(towerIndex => Towers[towerIndex].CanTakeAwayTopColor() && !Towers[towerIndex].IsFull())
                 .ToArray();
             
             possibleSwaps.Clear();
@@ -218,9 +304,10 @@ public class GameState
 
             Random random = new Random();
             var (from, to) = possibleSwaps[random.Next(0, possibleSwaps.Count - 1)];
-            int movedAmount = random.Next(1, Math.Min(Towers[from].GetCountOfTopColor(), Towers[to].GetCountOfTopEmpty()));
-            Move(from, to, movedAmount);
-        } while (possibleSwaps.Count > 0);
+            Move(from, to);
+            Solution.Push((from,to));
+            fixSteps++;
+        } while (possibleSwaps.Count > 0 || fixSteps >= MaxFixSteps);
     }
 
     public override string ToString()

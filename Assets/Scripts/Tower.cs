@@ -30,7 +30,7 @@ public class Tower
 
     public bool IsFull()
     {
-        return _layerColors[0] != Colors.none;
+        return _layerColors.All(color => color != Colors.none);
     }
     
     public int GetFirstColorIndex()
@@ -47,6 +47,20 @@ public class Tower
         }
 
         return _layerColors[firstIndex];
+    }
+
+    public bool CanTakeAwayTopColor()
+    {
+        int firstColorIndex = GetFirstColorIndex();
+        if (firstColorIndex == -1)
+        {
+            return false;
+        }
+
+        Colors color = _layerColors[firstColorIndex];
+
+        int belowFirstIndex = firstColorIndex + 1;
+        return belowFirstIndex == StackSize || _layerColors[belowFirstIndex] == color;
     }
 
     public bool CanInsertColor(Colors color, int movedAmount)
