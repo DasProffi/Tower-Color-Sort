@@ -5,8 +5,7 @@ using util;
 using Random = System.Random;
 
 public class GameState
-{   
-    public delegate void VoidDelegate();
+{
     public int NumberOfTowers = 13;
     public int SpareTowers = 2;
     public int NumberOfGenerationTries = 10;
@@ -17,9 +16,9 @@ public class GameState
     public Stack<(int, int)> Solution = new Stack<(int, int)>();
     private readonly Random _random;
 
-    public GameState(int seed=1892982356)
-    {   
-        _random = new Random(seed);
+    public GameState(int seed=0)
+    {
+        _random = seed == 0 ? new Random() : new Random(seed);
         GenerateRandom();
     }
     

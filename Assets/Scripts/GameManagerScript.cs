@@ -24,7 +24,7 @@ public class GameManagerScript : MonoBehaviour
         float usableWidth = width * 0.9f;
         float paddingPercentage = 1.5f;
         float towerWidth = usableWidth / numberOfTowers / paddingPercentage; // 0.5 as spacing between
-        float minimumTowerWidth = 90;
+        float minimumTowerWidth = 120;
         float rows = 1;
         int towersPerRow = numberOfTowers;
         if (towerWidth < minimumTowerWidth)
