@@ -10,6 +10,7 @@ public class GameState
     public delegate void VoidDelegate();
     public int NumberOfTowers = 12;
     public int SpareTowers = 2;
+    public int NumberOfGenerationTries = 20;
     public Tower[] Towers;
     public bool IsFinished = false;
     private readonly Stack<Tower[]> _undoStack = new Stack<Tower[]>();
@@ -180,7 +181,7 @@ public class GameState
         }
 
         Dictionary<(Tower[],Stack<(int,int)>), int> scores = new Dictionary<(Tower[],Stack<(int,int)>), int>();
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < NumberOfGenerationTries; i++)
         {
             Solution = new Stack<(int, int)>();
             Shuffle();
@@ -226,6 +227,7 @@ public class GameState
     {
         const int maxAmountOfShuffles = 30;
         int towerHeight = Towers[0].GetStackSize();
+        Colors[] forbiddenColors = Enumerable.Range(0,NumberOfTowers).Select(_ => Colors.none).ToArray();
         for (int i = 0; i < maxAmountOfShuffles; i++)
         {
             int[] fromTowers = Enumerable.Range(0, Towers.Length).ToArray();
@@ -242,13 +244,19 @@ public class GameState
                 };
                 return item;
             }).ToList();
-
+            
+            
             do
             {
                 int fromIndex = WeightRandomUtil.GetWeightedRandom(weightedFrom, -1);
-                int[] possibleTargets = Enumerable.Range(0, Towers.Length)
+                if (fromIndex == -1)
+                {
+                    break;
+                }
+                int[] possibleTargets = Enumerable.Range(0, NumberOfTowers)
                     .Where(index => Towers[index].GetCountOfTopEmpty() > 0 && index != fromIndex)
                     .Where(index => Towers[index].GetCountOfTopColor() != towerHeight-1)
+                    .Where(index => Towers[fromIndex].GetTopColor() != forbiddenColors[index])
                     .ToArray();
                 List<WeightedItem<int>> weightedTo = possibleTargets.Select(index =>
                 {
@@ -262,17 +270,20 @@ public class GameState
                     return item;
                 }).ToList();
                 
-                if (weightedTo.Count > 0 && fromIndex != -1)
+                if (weightedTo.Count > 0)
                 {
                     int targetIndex = WeightRandomUtil.GetWeightedRandom(weightedTo, -1);
-                    Move(fromIndex, targetIndex);
+                    
+                    List<WeightedItem<int>> weightedMoveAmount = Enumerable.Range(1,Math.Min(Towers[targetIndex].GetCountOfTopEmpty(), Towers[fromIndex].GetCountOfTopColor()))
+                        .Select(amount => new WeightedItem<int> { Item = amount, Weight = (float)(1/Math.Pow(amount,2)) }).ToList();
+                    Move(fromIndex, targetIndex,  WeightRandomUtil.GetWeightedRandom(weightedMoveAmount, 1));
+                    forbiddenColors[targetIndex] = Towers[targetIndex].GetTopColor();
                     Solution.Push((fromIndex,targetIndex));
                     break;
                 }
                 weightedFrom = weightedFrom.Where(item => item.Item != fromIndex).ToList();
             } while (weightedFrom.Count > 0);
         }
-        
         // Try to leave SpareTowers empty
         
         // Take from first move to second
@@ -307,7 +318,7 @@ public class GameState
             Move(from, to);
             Solution.Push((from,to));
             fixSteps++;
-        } while (possibleSwaps.Count > 0 || fixSteps >= MaxFixSteps);
+        } while (possibleSwaps.Count > 0 && fixSteps < MaxFixSteps);
     }
 
     public override string ToString()

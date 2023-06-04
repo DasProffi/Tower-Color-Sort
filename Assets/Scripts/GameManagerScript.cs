@@ -8,9 +8,8 @@ public class GameManagerScript : MonoBehaviour
     private GameObject[] _towersRenderer;
 
     private bool _isSolving = false;
-
+    private bool _isGenerating = false;
     private double _timer = 0;
-
     public double solveStepTime = 0.2;
     // Start is called before the first frame update
     
@@ -85,6 +84,10 @@ public class GameManagerScript : MonoBehaviour
     // returns whether the input tower should be selected
     public bool SetSelectedTower(int id)
     {
+        if (!_isSolving)
+        {
+            return false;
+        }
         if (_selectedTowerID == id)
         {
             _selectedTowerID = -1;
@@ -117,9 +120,15 @@ public class GameManagerScript : MonoBehaviour
 
     public void Reset()
     {
+        if (_isGenerating)
+        {
+            return;
+        }
+        _isGenerating = true;
         ClearSelections();
         GameState = new GameState();
         Rerender();
+        _isGenerating = false;
     }
 
     public void ClearSelections()
