@@ -15,6 +15,7 @@ public static class Constants {
             case Colors.ocker: return new Color(0.6f, 0.8f, 0.3f);
             case Colors.magenta: return Color.magenta;
             case Colors.lightBlue: return new Color(0.3f, 0.45f, 0.9f);
+            case Colors.darkGreen: return new Color(0f, 0.6f, 0.4f);
             case Colors.none: return Color.clear;
         }
 

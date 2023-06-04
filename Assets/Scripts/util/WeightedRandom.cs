@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace util
@@ -11,16 +12,17 @@ namespace util
     
     public class WeightRandomUtil
     {
-        public static T GetWeightedRandom<T>(List<WeightedItem<T>> weightedItems, T defaultValue)
+        public static T GetWeightedRandom<T>(List<WeightedItem<T>> weightedItems, T defaultValue, Random random = null)
         {
             // Calculate the total weight sum
-            float totalWeight = weightedItems.Sum(item => item.Weight);
+            double totalWeight = weightedItems.Sum(item => item.Weight);
 
             // Generate a random value between 0 and the total weight sum
-            float randomValue = UnityEngine.Random.Range(0f, totalWeight);
+            if (random == null) random = new Random();
+            double randomValue = random.NextDouble()*totalWeight;
 
             // Iterate over the weighted items and find the selected item
-            float weightSum = 0f;
+            double weightSum = 0f;
             foreach (var weightedItem in weightedItems)
             {
                 weightSum += weightedItem.Weight;

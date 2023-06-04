@@ -7,7 +7,7 @@ using Random = System.Random;
 public class GameState
 {   
     public delegate void VoidDelegate();
-    public int NumberOfTowers = 12;
+    public int NumberOfTowers = 13;
     public int SpareTowers = 2;
     public int NumberOfGenerationTries = 10;
     public Tower[] Towers;
@@ -15,9 +15,11 @@ public class GameState
     private readonly Stack<Tower[]> _undoStack = new Stack<Tower[]>();
     private readonly Stack<Tower[]> _redoStack = new Stack<Tower[]>();
     public Stack<(int, int)> Solution = new Stack<(int, int)>();
+    private readonly Random _random;
 
-    public GameState()
-    {
+    public GameState(int seed=1892982356)
+    {   
+        _random = new Random(seed);
         GenerateRandom();
     }
     
@@ -172,8 +174,7 @@ public class GameState
         usableColors = usableColors.Where(colors => colors != Colors.none).ToArray();
         
         // Get NumberOfTowers - 2 different Colors
-        Random random = new Random();
-        List<Colors> usedColorsList = usableColors.OrderBy(_ => random.Next()).Take(NumberOfTowers - SpareTowers).ToList();
+        List<Colors> usedColorsList = usableColors.OrderBy(_ => _random.Next()).Take(NumberOfTowers - SpareTowers).ToList();
         
 
         Dictionary<(Tower[],Stack<(int,int)>), int> scores = new Dictionary<(Tower[],Stack<(int,int)>), int>();
@@ -233,7 +234,7 @@ public class GameState
             List<WeightedItem<int>> weightedFrom = GetWeightedFromTowers();
             if (weightedFrom.Count == 0) break;
             do {
-                int fromIndex = WeightRandomUtil.GetWeightedRandom(weightedFrom, -1);
+                int fromIndex = WeightRandomUtil.GetWeightedRandom(weightedFrom, -1, _random);
                 if (fromIndex == -1) break;
                 
                 int targetIndex = GetTargetTower(fromIndex);
@@ -287,7 +288,7 @@ public class GameState
             };
             return item;
         }).ToList();
-        return  WeightRandomUtil.GetWeightedRandom(weightedTargets, -1);;
+        return  WeightRandomUtil.GetWeightedRandom(weightedTargets, -1, _random);;
     }
 
     private int GetMovedAmount(int iterationStep,int fromIndex, int targetIndex)
@@ -300,7 +301,7 @@ public class GameState
         
         List<WeightedItem<int>> weightedMoveAmount = Enumerable.Range(1,maxNumberOfMoves)
             .Select(amount => new WeightedItem<int> { Item = amount, Weight = iterationStep < 5 ? amount : (float)(1/Math.Pow(amount,2)) }).ToList();
-        return WeightRandomUtil.GetWeightedRandom(weightedMoveAmount, 1);
+        return WeightRandomUtil.GetWeightedRandom(weightedMoveAmount, 1, _random);
     }
     
     public override string ToString()

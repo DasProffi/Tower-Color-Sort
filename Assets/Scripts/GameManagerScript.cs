@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class GameManagerScript : MonoBehaviour
@@ -20,17 +21,33 @@ public class GameManagerScript : MonoBehaviour
         int boxesInTower = GameState.Towers[0].GetTowerHeight();
         _towersRenderer = new GameObject[numberOfTowers];
         float width = Screen.width;
-        float usableWidth = width * 0.8f;
-        float towerWidth = usableWidth / numberOfTowers / 1.5f; // 0.5 as spacing between
+        float usableWidth = width * 0.9f;
+        float paddingPercentage = 1.5f;
+        float towerWidth = usableWidth / numberOfTowers / paddingPercentage; // 0.5 as spacing between
+        float minimumTowerWidth = 90;
+        float rows = 1;
+        int towersPerRow = numberOfTowers;
+        if (towerWidth < minimumTowerWidth)
+        {
+            towersPerRow = (int)Math.Floor(usableWidth / minimumTowerWidth / paddingPercentage);
+            towerWidth = minimumTowerWidth;
+            rows = (int)Math.Ceiling((double)numberOfTowers / towersPerRow);
+        }
         float boxHeight = towerWidth / 2;
+        float towerHeight = boxHeight * boxesInTower;
         for (int i = 0; i < numberOfTowers; i++)
         {
             // Create a new box GameObject
+            int rowIndex = i / towersPerRow;
+            int towersInCurrentRow = rowIndex == numberOfTowers/towersPerRow ? numberOfTowers % towersPerRow :towersPerRow;
             _towersRenderer[i] = Instantiate(towerRendererPrefab, transform);
             TowerRendererScript towerRendererScript = _towersRenderer[i].GetComponent<TowerRendererScript>();
             towerRendererScript.id = i;
             RectTransform rectTransform = _towersRenderer[i].GetComponent<RectTransform>();
-            rectTransform.localPosition = new Vector3(usableWidth / numberOfTowers *(-numberOfTowers / 2 + i + (numberOfTowers % 2 == 0 ? 0.5f : 0)), 0);
+            float rowsYStart = rows * paddingPercentage * towerHeight / 2;
+            float towerY = -rowIndex * paddingPercentage * towerHeight + rowsYStart;
+            float towerX = usableWidth / towersInCurrentRow * (-towersInCurrentRow / 2 + i%towersPerRow + (towersInCurrentRow % 2 == 0 ? 0.5f : 0));
+            rectTransform.localPosition = new Vector3(towerX, towerY);
             rectTransform.sizeDelta = new Vector2(towerWidth, boxHeight*boxesInTower);
             BoxCollider2D boxCollider2D = _towersRenderer[i].GetComponent<BoxCollider2D>();
             boxCollider2D.size = new Vector2(towerWidth, boxHeight*boxesInTower);
@@ -77,17 +94,17 @@ public class GameManagerScript : MonoBehaviour
     }
     
     public void StartSolve()
-    {
+    {   
+        if(IsBlockingInput()) return;
+        
         _isSolving = true;
     }
 
     // returns whether the input tower should be selected
     public bool SetSelectedTower(int id)
     {
-        if (_isSolving)
-        {
-            return false;
-        }
+        if(IsBlockingInput()) return false;
+        
         if (_selectedTowerID == id)
         {
             _selectedTowerID = -1;
@@ -107,26 +124,28 @@ public class GameManagerScript : MonoBehaviour
     }
 
     public void Redo()
-    {
+    {   
+        if(IsBlockingInput()) return;
+        
         GameState.Redo();
         Rerender();
     }
     
     public void Undo()
-    {
+    {   
+        if(IsBlockingInput()) return;
+        
         GameState.Undo();
         Rerender();
     }
 
     public void Reset()
     {
-        if (_isGenerating)
-        {
-            return;
-        }
+        if(IsBlockingInput()) return;
+        
         _isGenerating = true;
         ClearSelections();
-        GameState = new GameState();
+        GameState = new GameState(DateTime.UtcNow.Millisecond);
         Rerender();
         _isGenerating = false;
     }
@@ -148,5 +167,10 @@ public class GameManagerScript : MonoBehaviour
             TowerRendererScript towerRendererScript = _towersRenderer[i].GetComponent<TowerRendererScript>();
             towerRendererScript.SetTower(GameState.Towers[i]);
         }
+    }
+
+    private bool IsBlockingInput()
+    {
+        return _isGenerating || _isSolving;
     }
 }
