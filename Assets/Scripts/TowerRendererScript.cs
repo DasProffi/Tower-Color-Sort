@@ -18,11 +18,11 @@ public class TowerRendererScript : MonoBehaviour
         _tower = gameManagerScript.GameState.Towers[id];
         _selectMarker = transform.Find("SelectMarker").gameObject;
         _selectMarker.SetActive(false);
-        _boxes = new GameObject[_tower.GetStackSize()];
-        float boxHeight = GetComponent<RectTransform>().sizeDelta.y / _tower.GetStackSize();
+        _boxes = new GameObject[_tower.GetTowerHeight()];
+        float boxHeight = GetComponent<RectTransform>().sizeDelta.y / _tower.GetTowerHeight();
         float boxWidth = GetComponent<RectTransform>().sizeDelta.x;
         _selectMarker.GetComponent<RectTransform>().localScale = new Vector3(2.2f,0.2f) * boxHeight;
-        for (int i = 0; i < _tower.GetStackSize(); i++)
+        for (int i = 0; i < _tower.GetTowerHeight(); i++)
         {
             // Create a new box GameObject
             _boxes[i] = Instantiate(boxPrefab, transform);
@@ -31,7 +31,7 @@ public class TowerRendererScript : MonoBehaviour
             
             // Set the position and size of the box using RectTransform
             RectTransform rectTransform = _boxes[i].GetComponent<RectTransform>();
-            rectTransform.localPosition = new Vector3(0,  boxHeight * (_tower.GetStackSize() / 2 - i - 0.5f));
+            rectTransform.localPosition = new Vector3(0,  boxHeight * (_tower.GetTowerHeight() / 2 - i - 0.5f));
             rectTransform.sizeDelta = new Vector2(boxWidth,boxHeight);
             
             SpriteRenderer spriteRenderer = _boxes[i].GetComponent<SpriteRenderer>();
@@ -69,7 +69,7 @@ public class TowerRendererScript : MonoBehaviour
 
     private void RenderTower()
     {
-        for (int i = 0; i < _tower.GetStackSize(); i++)
+        for (int i = 0; i < _tower.GetTowerHeight(); i++)
         {
             BoxPrefabScript boxPrefabScript = _boxes[i].GetComponent<BoxPrefabScript>();
             boxPrefabScript.SetColor(_tower.GetLayerColor(i));

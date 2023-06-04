@@ -190,7 +190,7 @@ public class Tower
         return _layerColors[index];
     }
 
-    public int GetStackSize()
+    public int GetTowerHeight()
     {
         return StackSize;
     }

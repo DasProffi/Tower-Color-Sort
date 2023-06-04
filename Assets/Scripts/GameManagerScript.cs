@@ -17,7 +17,7 @@ public class GameManagerScript : MonoBehaviour
     {
         GameState = new GameState();
         int numberOfTowers = GameState.NumberOfTowers;
-        int boxesInTower = GameState.Towers[0].GetStackSize();
+        int boxesInTower = GameState.Towers[0].GetTowerHeight();
         _towersRenderer = new GameObject[numberOfTowers];
         float width = Screen.width;
         float usableWidth = width * 0.8f;
@@ -84,7 +84,7 @@ public class GameManagerScript : MonoBehaviour
     // returns whether the input tower should be selected
     public bool SetSelectedTower(int id)
     {
-        if (!_isSolving)
+        if (_isSolving)
         {
             return false;
         }
