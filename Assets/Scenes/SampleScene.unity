@@ -816,7 +816,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -217.6}
+  m_AnchoredPosition: {x: 0, y: -217.59998}
   m_SizeDelta: {x: 346.2, y: 121.9}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1633378722
@@ -919,7 +919,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerRendererPrefab: {fileID: 4105812086161043889, guid: 0b1a304425313714ea9c398f1009d438, type: 3}
-  solveStepTime: 0.2
+  solveStepTime: 0.4
 --- !u!1 &1971315770
 GameObject:
   m_ObjectHideFlags: 0

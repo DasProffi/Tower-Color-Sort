@@ -27,22 +27,13 @@ public class TowerRendererScript : MonoBehaviour
             // Create a new box GameObject
             _boxes[i] = Instantiate(boxPrefab, transform);
             _boxes[i].name = "TowerBox" + i;
-            _boxes[i].GetComponent<BoxPrefabScript>().SetColor(_tower.GetLayerColor(i));
+            _boxes[i].GetComponent<BoxPrefabScript>().Initialize(_tower.GetLayerColor(i));
             
             // Set the position and size of the box using RectTransform
             RectTransform rectTransform = _boxes[i].GetComponent<RectTransform>();
             rectTransform.localPosition = new Vector3(0,  boxHeight * (_tower.GetTowerHeight() / 2 - i - 0.5f));
             rectTransform.sizeDelta = new Vector2(boxWidth,boxHeight);
-            
-            SpriteRenderer spriteRenderer = _boxes[i].GetComponent<SpriteRenderer>();
-            spriteRenderer.transform.localScale = new Vector3(boxHeight, boxHeight);
         }
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     private void OnMouseOver(){
@@ -72,7 +63,7 @@ public class TowerRendererScript : MonoBehaviour
         for (int i = 0; i < _tower.GetTowerHeight(); i++)
         {
             BoxPrefabScript boxPrefabScript = _boxes[i].GetComponent<BoxPrefabScript>();
-            boxPrefabScript.SetColor(_tower.GetLayerColor(i));
+            boxPrefabScript.ChangeColor(_tower.GetLayerColor(i));
         }
     }
 }

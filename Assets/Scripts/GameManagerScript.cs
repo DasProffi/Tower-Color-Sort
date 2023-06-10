@@ -8,50 +8,15 @@ public class GameManagerScript : MonoBehaviour
     private int _selectedTowerID = -1;
     private GameObject[] _towersRenderer;
 
-    private bool _isSolving = false;
-    private bool _isGenerating = false;
-    private double _timer = 0;
-    public double solveStepTime = 0.2;
+    private bool _isSolving;
+    private bool _isGenerating;
+    private double _timer;
+    public double solveStepTime = 0.4;
     // Start is called before the first frame update
     
     void Start()
     {
-        GameState = new GameState();
-        int numberOfTowers = GameState.NumberOfTowers;
-        int boxesInTower = GameState.Towers[0].GetTowerHeight();
-        _towersRenderer = new GameObject[numberOfTowers];
-        float width = Screen.width;
-        float usableWidth = width * 0.9f;
-        float paddingPercentage = 1.5f;
-        float towerWidth = usableWidth / numberOfTowers / paddingPercentage; // 0.5 as spacing between
-        float minimumTowerWidth = 120;
-        float rows = 1;
-        int towersPerRow = numberOfTowers;
-        if (towerWidth < minimumTowerWidth)
-        {
-            towersPerRow = (int)Math.Floor(usableWidth / minimumTowerWidth / paddingPercentage);
-            towerWidth = minimumTowerWidth;
-            rows = (int)Math.Ceiling((double)numberOfTowers / towersPerRow);
-        }
-        float boxHeight = towerWidth / 2;
-        float towerHeight = boxHeight * boxesInTower;
-        for (int i = 0; i < numberOfTowers; i++)
-        {
-            // Create a new box GameObject
-            int rowIndex = i / towersPerRow;
-            int towersInCurrentRow = rowIndex == numberOfTowers/towersPerRow ? numberOfTowers % towersPerRow :towersPerRow;
-            _towersRenderer[i] = Instantiate(towerRendererPrefab, transform);
-            TowerRendererScript towerRendererScript = _towersRenderer[i].GetComponent<TowerRendererScript>();
-            towerRendererScript.id = i;
-            RectTransform rectTransform = _towersRenderer[i].GetComponent<RectTransform>();
-            float rowsYStart = rows * paddingPercentage * towerHeight / 2;
-            float towerY = -rowIndex * paddingPercentage * towerHeight + rowsYStart;
-            float towerX = usableWidth / towersInCurrentRow * (-towersInCurrentRow / 2 + i%towersPerRow + (towersInCurrentRow % 2 == 0 ? 0.5f : 0));
-            rectTransform.localPosition = new Vector3(towerX, towerY);
-            rectTransform.sizeDelta = new Vector2(towerWidth, boxHeight*boxesInTower);
-            BoxCollider2D boxCollider2D = _towersRenderer[i].GetComponent<BoxCollider2D>();
-            boxCollider2D.size = new Vector2(towerWidth, boxHeight*boxesInTower);
-        }
+        Reset();
     }
 
     // Update is called once per frame
@@ -66,30 +31,35 @@ public class GameManagerScript : MonoBehaviour
         if (_timer > solveStepTime)
         {
             _timer -= solveStepTime;
-            if (GameState.HasUndo())
-            {   
-                GameState.Undo();
-                Rerender();
-            }
-            else if(GameState.Solution.Count > 0)
+            SolveStep();
+        }
+    }
+
+    private void SolveStep()
+    {
+        if (GameState.HasUndo())
+        {   
+            GameState.Undo();
+            Rerender();
+        }
+        else if(GameState.Solution.Count > 0)
+        {
+            var (from, to) = GameState.Solution.Pop();
+            if (GameState.TryMove(to, from, false))
             {
-                var (from, to) = GameState.Solution.Pop();
-                if (GameState.TryMove(to, from, false))
-                {
-                    Debug.Log("("+to+","+from+")");
-                }
-                else
-                {   
-                    // These could potentially cause problems
-                    // Caused by only taking one from the Stack
-                    Debug.LogWarning("("+to+","+from+")");
-                }
-                Rerender();
+                Debug.Log("("+to+","+from+")");
             }
             else
-            {
-                _isSolving = false;
+            {   
+                // These could potentially cause problems
+                // Caused by only taking one from the Stack
+                Debug.LogWarning("("+to+","+from+")");
             }
+            Rerender();
+        }
+        else
+        {
+            _isSolving = false;
         }
     }
     
@@ -142,11 +112,52 @@ public class GameManagerScript : MonoBehaviour
     public void Reset()
     {
         if(IsBlockingInput()) return;
-        
+
+        if (_towersRenderer != null)
+        {
+            foreach (var o in _towersRenderer)
+            {
+               Destroy(o);
+            }
+        }
         _isGenerating = true;
-        ClearSelections();
-        GameState = new GameState(DateTime.UtcNow.Millisecond);
-        Rerender();
+        GameState = new GameState();
+        int numberOfTowers = GameState.NumberOfTowers;
+        int boxesInTower = GameState.Towers[0].GetTowerHeight();
+        _towersRenderer = new GameObject[numberOfTowers];
+        float width = Screen.width;
+        float usableWidth = width * 0.9f;
+        float paddingPercentage = 1.5f;
+        float towerWidth = usableWidth / numberOfTowers / paddingPercentage; // 0.5 as spacing between
+        float minimumTowerWidth = 120;
+        float rows = 1;
+        int towersPerRow = numberOfTowers;
+        if (towerWidth < minimumTowerWidth)
+        {
+            towersPerRow = (int)Math.Floor(usableWidth / minimumTowerWidth / paddingPercentage);
+            towerWidth = minimumTowerWidth;
+            rows = (int)Math.Ceiling((double)numberOfTowers / towersPerRow);
+        }
+        float boxHeight = towerWidth / 2;
+        float towerHeight = boxHeight * boxesInTower;
+        for (int i = 0; i < numberOfTowers; i++)
+        {
+            // Create a new box GameObject
+            int rowIndex = i / towersPerRow;
+            int towersInCurrentRow = rowIndex == numberOfTowers/towersPerRow ? numberOfTowers % towersPerRow :towersPerRow;
+            _towersRenderer[i] = Instantiate(towerRendererPrefab, transform);
+            TowerRendererScript towerRendererScript = _towersRenderer[i].GetComponent<TowerRendererScript>();
+            towerRendererScript.id = i;
+            RectTransform rectTransform = _towersRenderer[i].GetComponent<RectTransform>();
+            float rowsYStart = rows * paddingPercentage * towerHeight / 2;
+            float towerY = -rowIndex * paddingPercentage * towerHeight + rowsYStart;
+            float columnXStart = -(towersInCurrentRow-1) * paddingPercentage * towerWidth /2;
+            float towerX = (i % towersPerRow) * paddingPercentage * towerWidth + columnXStart;
+            rectTransform.localPosition = new Vector3(towerX, towerY);
+            rectTransform.sizeDelta = new Vector2(towerWidth, boxHeight*boxesInTower);
+            BoxCollider2D boxCollider2D = _towersRenderer[i].GetComponent<BoxCollider2D>();
+            boxCollider2D.size = new Vector2(towerWidth, boxHeight*boxesInTower);
+        }
         _isGenerating = false;
     }
 
