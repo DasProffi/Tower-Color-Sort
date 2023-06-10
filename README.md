@@ -1,7 +1,7 @@
 # Tower Color Sort
 A Game in Unity about sorting Towers of different colored blocks
 
-<img src="https://github.com/DasProffi/TowerSort/assets/67233923/12f90377-53ae-43c9-8bfc-46e9aa7d5cb5" width="200px"/>
+<img src="https://github.com/DasProffi/Tower-Color-Sort/assets/67233923/0c666582-eedc-4937-9f55-0adbec448e1d" width="200px"/>
 
 The picture shows the current state of development. 
 
