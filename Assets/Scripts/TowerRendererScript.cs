@@ -15,7 +15,7 @@ public class TowerRendererScript : MonoBehaviour
     private void Start()
     {
         gameManagerScript = transform.parent.GetComponent<GameManagerScript>();
-        _tower = gameManagerScript.GameState.Towers[id];
+        _tower = GameState.Instance.Towers[id];
         _selectMarker = transform.Find("SelectMarker").gameObject;
         _selectMarker.SetActive(false);
         _boxes = new GameObject[_tower.GetTowerHeight()];

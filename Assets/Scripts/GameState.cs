@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using LevelData;
 using util;
 using Random = System.Random;
 
 public class GameState
-{
+{   
+    private static GameState _instance = null;
     public int NumberOfTowers = 13;
     public int SpareTowers = 2;
     public int NumberOfGenerationTries = 10;
@@ -14,12 +16,56 @@ public class GameState
     private readonly Stack<Tower[]> _undoStack = new Stack<Tower[]>();
     private readonly Stack<Tower[]> _redoStack = new Stack<Tower[]>();
     public Stack<(int, int)> Solution = new Stack<(int, int)>();
-    private readonly Random _random;
+    private int _randomSeed;
+    private Random _random;
+    public bool IsAutosolving = false;
 
-    public GameState(int seed=0)
+    private GameState()
     {
-        _random = seed == 0 ? new Random() : new Random(seed);
+        ChangeSeed();
+    }
+    
+    public static GameState Instance
+    {
+        get { return _instance ??= new GameState(); }
+    }
+
+    public void ChangeLevel(int level)
+    {
+        int customSeed = CustomLevels.GetSeed(level,0);
+        ChangeSeed(customSeed);
+    }
+
+    public void ChangeSeed(int seed = 0)
+    {
+        _randomSeed = seed == 0 ? new Random().Next() : seed;
+        _random = new Random(_randomSeed);
+        IsFinished = false;
         GenerateRandom();
+    }
+
+    public void Reset()
+    {
+        ChangeSeed(_randomSeed);
+    }
+    
+    public void LoadGame(Colors[][] towers)
+    {
+        Towers = new Tower[towers.Length];
+        for(int i = 0; i < Towers.Length; i++)
+        {
+            Towers[i] = new Tower(towers[i]);
+        }
+    }
+
+    public Colors[][] Export()
+    {
+        Colors[][] colors = new Colors[Towers.Length][];
+        for (int i = 0; i < Towers.Length; i++)
+        {
+            colors[i] = Towers[i].GetLayerColors();
+        }
+        return colors;
     }
     
     public bool TryMove(int from, int to, bool addToUndo = true)

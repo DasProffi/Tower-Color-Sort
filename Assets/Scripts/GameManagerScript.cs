@@ -1,10 +1,10 @@
 using System;
 using UnityEngine;
+using Random = System.Random;
 
 public class GameManagerScript : MonoBehaviour
 {
-    public GameObject towerRendererPrefab; 
-    public GameState GameState;
+    public GameObject towerRendererPrefab;
     private int _selectedTowerID = -1;
     private GameObject[] _towersRenderer;
 
@@ -12,11 +12,29 @@ public class GameManagerScript : MonoBehaviour
     private bool _isGenerating;
     private double _timer;
     public double solveStepTime = 0.4;
-    // Start is called before the first frame update
     
+    // Start is called before the first frame update
     void Start()
     {
-        Reset();
+        if (GameState.Instance.IsAutosolving)
+        {
+            GameState.Instance.ChangeLevel(new Random().Next());
+            LayoutAndAssignComponents();
+            StartSolve();
+            return;
+        }
+        SaveGame saveGame = SaveGameManager.Instance.SaveGame;
+        if (saveGame.currentLevelID == 0)
+        {
+            saveGame.currentLevelID = 1;
+            GameState.Instance.ChangeLevel(saveGame.currentLevelID);
+        }
+        else
+        {
+            GameState.Instance.LoadGame(saveGame.CurrentLevel);
+        }
+        LayoutAndAssignComponents();
+        Save();
     }
 
     // Update is called once per frame
@@ -37,15 +55,15 @@ public class GameManagerScript : MonoBehaviour
 
     private void SolveStep()
     {
-        if (GameState.HasUndo())
+        if (GameState.Instance.HasUndo())
         {   
-            GameState.Undo();
+            GameState.Instance.Undo();
             Rerender();
         }
-        else if(GameState.Solution.Count > 0)
+        else if(GameState.Instance.Solution.Count > 0)
         {
-            var (from, to) = GameState.Solution.Pop();
-            if (GameState.TryMove(to, from, false))
+            var (from, to) = GameState.Instance.Solution.Pop();
+            if (GameState.Instance.TryMove(to, from, false))
             {
                 Debug.Log("("+to+","+from+")");
             }
@@ -59,8 +77,16 @@ public class GameManagerScript : MonoBehaviour
         }
         else
         {
-            _isSolving = false;
+            GameState.Instance.ChangeSeed(new Random().Next());
+            Reset();
         }
+    }
+
+    // Saves the current State
+    private void Save()
+    {
+        SaveGameManager.Instance.SaveGame.CurrentLevel = GameState.Instance.Export();
+        SaveGameManager.Instance.Save();
     }
     
     public void StartSolve()
@@ -85,10 +111,19 @@ public class GameManagerScript : MonoBehaviour
             _selectedTowerID = id;
             return true;
         }
-        if (GameState.TryMove(_selectedTowerID, id))
+        if (GameState.Instance.TryMove(_selectedTowerID, id))
         {
             ClearSelections();
             Rerender();
+            if (!GameState.Instance.IsAutosolving)
+            {   
+                if (GameState.Instance.GetIsFinished())
+                {
+                    SaveGameManager.Instance.SaveGame.currentLevelID += 1;
+                    GameState.Instance.ChangeLevel(SaveGameManager.Instance.SaveGame.currentLevelID);
+                }
+                Save();
+            }
         }
         return false;
     }
@@ -97,7 +132,7 @@ public class GameManagerScript : MonoBehaviour
     {   
         if(IsBlockingInput()) return;
         
-        GameState.Redo();
+        GameState.Instance.Redo();
         Rerender();
     }
     
@@ -105,7 +140,7 @@ public class GameManagerScript : MonoBehaviour
     {   
         if(IsBlockingInput()) return;
         
-        GameState.Undo();
+        GameState.Instance.Undo();
         Rerender();
     }
 
@@ -121,9 +156,19 @@ public class GameManagerScript : MonoBehaviour
             }
         }
         _isGenerating = true;
-        GameState = new GameState();
-        int numberOfTowers = GameState.NumberOfTowers;
-        int boxesInTower = GameState.Towers[0].GetTowerHeight();
+        GameState.Instance.Reset();
+        if (!GameState.Instance.IsAutosolving)
+        {
+            Save();
+        }
+        LayoutAndAssignComponents();
+        _isGenerating = false;
+    }
+
+    private void LayoutAndAssignComponents()
+    {
+        int numberOfTowers = GameState.Instance.NumberOfTowers;
+        int boxesInTower = GameState.Instance.Towers[0].GetTowerHeight();
         _towersRenderer = new GameObject[numberOfTowers];
         float width = Screen.width;
         float usableWidth = width * 0.9f;
@@ -158,13 +203,12 @@ public class GameManagerScript : MonoBehaviour
             BoxCollider2D boxCollider2D = _towersRenderer[i].GetComponent<BoxCollider2D>();
             boxCollider2D.size = new Vector2(towerWidth, boxHeight*boxesInTower);
         }
-        _isGenerating = false;
     }
 
     public void ClearSelections()
     {
         _selectedTowerID = -1;
-        for (int i = 0; i < GameState.NumberOfTowers; i++)
+        for (int i = 0; i < GameState.Instance.NumberOfTowers; i++)
         {
             TowerRendererScript towerRendererScript = _towersRenderer[i].GetComponent<TowerRendererScript>();
             towerRendererScript.SetSelected(false);
@@ -173,10 +217,10 @@ public class GameManagerScript : MonoBehaviour
     
     public void Rerender()
     {
-        for (int i = 0; i < GameState.NumberOfTowers; i++)
+        for (int i = 0; i < GameState.Instance.NumberOfTowers; i++)
         {
             TowerRendererScript towerRendererScript = _towersRenderer[i].GetComponent<TowerRendererScript>();
-            towerRendererScript.SetTower(GameState.Towers[i]);
+            towerRendererScript.SetTower(GameState.Instance.Towers[i]);
         }
     }
 
